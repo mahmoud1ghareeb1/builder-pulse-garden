@@ -88,3 +88,18 @@ export async function fetchOpenExams() {
   }
   return data as unknown as Exam[];
 }
+
+export async function fetchLessonById(id: string) {
+  const supabase = getSupabase();
+  if (!supabase) return null as unknown as Lesson | null;
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("id,title,thumbnail_url,watched,published_at")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("Failed to fetch lesson", error);
+    return null;
+  }
+  return data as unknown as Lesson;
+}
