@@ -20,7 +20,7 @@ export default function LectureDetail(){
         <p className="text-muted-foreground">جارِ التحميل...</p>
       ) : !lesson ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">لا توجد محاضرة بهذا المعرف.</CardContent>
+          <CardContent className="py-8 text-center text-muted-foreground">لا ت��جد محاضرة بهذا المعرف.</CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -39,5 +39,41 @@ export default function LectureDetail(){
         </div>
       )}
     </MainLayout>
+  );
+}
+
+function toYouTubeEmbed(url: string){
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be')) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    if (u.hostname.includes('youtube.com')) {
+      const id = u.searchParams.get('v');
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+  } catch {}
+  return null;
+}
+
+function YouTubePlayer({url}:{url:string}){
+  const embed = toYouTubeEmbed(url);
+  return (
+    <div className="aspect-[16/9] w-full overflow-hidden rounded-md bg-black/5">
+      {embed ? (
+        <iframe className="w-full h-full" src={`${embed}?rel=0`} title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+      ) : (
+        <div className="w-full h-full grid place-items-center text-muted-foreground text-sm">لا يوجد رابط فيديو</div>
+      )}
+    </div>
+  );
+}
+
+function WatchedToggle({id}:{id:string}){
+  async function handle(){
+    const res = await markLessonWatched(id, true);
+    if ('error' in res) alert('يستلزم تسجيل الدخول لتسجيل المشاهدة');
+  }
+  return (
+    <Button onClick={handle} className="w-full">تحديد كمُشاهد</Button>
   );
 }
