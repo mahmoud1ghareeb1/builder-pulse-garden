@@ -4,6 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchLessonById } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { markLessonWatched } from "@/lib/supabase";
 
 export default function LectureDetail(){
   const { id } = useParams();
@@ -30,8 +31,9 @@ export default function LectureDetail(){
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">تفاصيل المحاضرة</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="aspect-[16/9] w-full rounded-md bg-muted"/>
+              <YouTubePlayer url={lesson.video_url ?? ''} />
               <p className="text-sm text-muted-foreground">تاريخ النشر: {lesson.published_at ? new Date(lesson.published_at).toLocaleString() : "غير متوفر"}</p>
+              <WatchedToggle id={lesson.id} />
             </CardContent>
           </Card>
         </div>

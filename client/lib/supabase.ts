@@ -94,7 +94,7 @@ export async function fetchLessonById(id: string) {
   if (!supabase) return null as unknown as Lesson | null;
   const { data, error } = await supabase
     .from("lessons")
-    .select("id,title,thumbnail_url,watched,published_at")
+    .select("id,title,thumbnail_url,video_url,watched,published_at")
     .eq("id", id)
     .single();
   if (error) {
@@ -102,4 +102,25 @@ export async function fetchLessonById(id: string) {
     return null;
   }
   return data as unknown as Lesson;
+}
+
+export async function getCurrentUser() {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getUser();
+  return data.user ?? null;
+}
+
+export async function markLessonWatched(lessonId: string, watched: boolean) {
+  const supabase = getSupabase();
+  if (!supabase) return { error: "no-client" } as const;
+  const user = await getCurrentUser();
+  if (!user) return { error: "not-authenticated" } as const;
+  const { error } = await supabase
+    .from("lesson_progress")
+    .upsert({ lesson_id: lessonId, user_id: user.id, watched })
+    .select()
+    .single();
+  if (error) return { error } as const;
+  return { success: true } as const;
 }
