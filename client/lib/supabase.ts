@@ -30,6 +30,7 @@ export type Lesson = {
   id: string;
   title: string;
   thumbnail_url: string | null;
+  video_url: string | null;
   watched: boolean | null;
   published_at: string | null;
 };
@@ -42,34 +43,74 @@ export type Exam = {
   duration_minutes: number | null;
 };
 
+export type ExamQuestion = {
+  id: string;
+  title: string;
+  order_no: number;
+};
+
+export type ExamChoice = {
+  id: string;
+  question_id: string;
+  text: string;
+  correct: boolean | null;
+};
+
 export async function fetchLessons(limit?: number) {
   const supabase = getSupabase();
   if (!supabase) return [] as Lesson[];
-  let query = supabase.from("lessons").select("id,title,thumbnail_url,video_url,watched,published_at").order("published_at", { ascending: false });
-  if (limit) query = query.limit(limit);
-  const { data, error } = await query;
-  if (error) {
-    console.error("Failed to fetch lessons", error);
+  try {
+    let query = supabase
+      .from("lessons")
+      .select("id,title,thumbnail_url,video_url,watched,published_at")
+      .order("published_at", { ascending: false });
+    if (limit) query = query.limit(limit);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as unknown as Lesson[];
+  } catch (error: any) {
+    // Fallback if video_url column doesn't exist yet
+    if (error?.code === "42703" || String(error?.message || "").includes("video_url")) {
+      let query = supabase
+        .from("lessons")
+        .select("id,title,thumbnail_url,watched,published_at")
+        .order("published_at", { ascending: false });
+      if (limit) query = query.limit(limit);
+      const { data, error: e2 } = await query;
+      if (!e2) return data as unknown as Lesson[];
+    }
+    console.error("Failed to fetch lessons", { message: error?.message, code: error?.code });
     return [] as Lesson[];
   }
-  return data as unknown as Lesson[];
 }
 
 export async function fetchUnwatchedLessons(limit?: number) {
   const supabase = getSupabase();
   if (!supabase) return [] as Lesson[];
-  let query = supabase
-    .from("lessons")
-    .select("id,title,thumbnail_url,video_url,watched,published_at")
-    .eq("watched", false)
-    .order("published_at", { ascending: false });
-  if (limit) query = query.limit(limit);
-  const { data, error } = await query;
-  if (error) {
-    console.error("Failed to fetch lessons", error);
+  try {
+    let query = supabase
+      .from("lessons")
+      .select("id,title,thumbnail_url,video_url,watched,published_at")
+      .eq("watched", false)
+      .order("published_at", { ascending: false });
+    if (limit) query = query.limit(limit);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as unknown as Lesson[];
+  } catch (error: any) {
+    if (error?.code === "42703" || String(error?.message || "").includes("video_url")) {
+      let query = supabase
+        .from("lessons")
+        .select("id,title,thumbnail_url,watched,published_at")
+        .eq("watched", false)
+        .order("published_at", { ascending: false });
+      if (limit) query = query.limit(limit);
+      const { data, error: e2 } = await query;
+      if (!e2) return data as unknown as Lesson[];
+    }
+    console.error("Failed to fetch lessons", { message: error?.message, code: error?.code });
     return [] as Lesson[];
   }
-  return data as unknown as Lesson[];
 }
 
 export async function fetchOpenExams() {
@@ -92,16 +133,26 @@ export async function fetchOpenExams() {
 export async function fetchLessonById(id: string) {
   const supabase = getSupabase();
   if (!supabase) return null as unknown as Lesson | null;
-  const { data, error } = await supabase
-    .from("lessons")
-    .select("id,title,thumbnail_url,video_url,watched,published_at")
-    .eq("id", id)
-    .single();
-  if (error) {
-    console.error("Failed to fetch lesson", error);
+  try {
+    const { data, error } = await supabase
+      .from("lessons")
+      .select("id,title,thumbnail_url,video_url,watched,published_at")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data as unknown as Lesson;
+  } catch (error: any) {
+    if (error?.code === "42703" || String(error?.message || "").includes("video_url")) {
+      const { data, error: e2 } = await supabase
+        .from("lessons")
+        .select("id,title,thumbnail_url,watched,published_at")
+        .eq("id", id)
+        .single();
+      if (!e2) return data as unknown as Lesson;
+    }
+    console.error("Failed to fetch lesson", { message: error?.message, code: error?.code });
     return null;
   }
-  return data as unknown as Lesson;
 }
 
 export async function getCurrentUser() {
