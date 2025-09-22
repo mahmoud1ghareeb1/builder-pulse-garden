@@ -41,7 +41,7 @@ export default function ExamDetail(){
                 {exam.duration_minutes ? (<div>المدة: {exam.duration_minutes} دقيقة</div>) : null}
               </div>
               <div className="text-sm">عدد الأسئلة: {questions.length}</div>
-              <Button className="w-full" disabled={questions.length===0}>بدء الامتحان</Button>
+              <Button asChild className="w-full" disabled={questions.length===0}><Link to={`/exams/${id}/start`}>بدء الامتحان</Link></Button>
             </CardContent>
           </Card>
         </div>
