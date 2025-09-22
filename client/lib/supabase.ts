@@ -130,6 +130,36 @@ export async function fetchOpenExams() {
   return data as unknown as Exam[];
 }
 
+export async function fetchExamById(id: string) {
+  const supabase = getSupabase();
+  if (!supabase) return null as unknown as Exam | null;
+  const { data, error } = await supabase
+    .from("exams")
+    .select("id,name,open_at,close_at,duration_minutes")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("Failed to fetch exam", error);
+    return null;
+  }
+  return data as unknown as Exam;
+}
+
+export async function fetchExamQuestions(examId: string) {
+  const supabase = getSupabase();
+  if (!supabase) return [] as ExamQuestion[];
+  const { data, error } = await supabase
+    .from("exam_questions")
+    .select("id,title,order_no")
+    .eq("exam_id", examId)
+    .order("order_no", { ascending: true });
+  if (error) {
+    console.error("Failed to fetch exam questions", error);
+    return [] as ExamQuestion[];
+  }
+  return data as unknown as ExamQuestion[];
+}
+
 export async function fetchLessonById(id: string) {
   const supabase = getSupabase();
   if (!supabase) return null as unknown as Lesson | null;
