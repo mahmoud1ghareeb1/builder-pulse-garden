@@ -56,6 +56,8 @@ export type ExamChoice = {
   correct: boolean | null;
 };
 
+export type ExamQuestionWithChoices = ExamQuestion & { choices: ExamChoice[] };
+
 export async function fetchLessons(limit?: number) {
   const supabase = getSupabase();
   if (!supabase) return [] as Lesson[];
@@ -158,6 +160,75 @@ export async function fetchExamQuestions(examId: string) {
     return [] as ExamQuestion[];
   }
   return data as unknown as ExamQuestion[];
+}
+
+export async function fetchExamFull(examId: string) {
+  const supabase = getSupabase();
+  if (!supabase) return [] as ExamQuestionWithChoices[];
+  const { data, error } = await supabase
+    .from("exam_questions")
+    .select("id,title,order_no, choices:exam_choices(id,text,question_id,correct)")
+    .eq("exam_id", examId)
+    .order("order_no", { ascending: true });
+  if (error) {
+    console.error("Failed to fetch exam full", error);
+    return [] as ExamQuestionWithChoices[];
+  }
+  return data as unknown as ExamQuestionWithChoices[];
+}
+
+export async function startExamAttempt(examId: string){
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const user = await getCurrentUser();
+  if (!user) return null;
+  // if there is unfinished attempt, reuse it
+  const { data: existing } = await supabase
+    .from('exam_attempts')
+    .select('id,finished_at')
+    .eq('exam_id', examId)
+    .eq('user_id', user.id)
+    .is('finished_at', null)
+    .limit(1)
+    .maybeSingle();
+  if (existing && !existing.finished_at) return existing.id as string;
+  const { data, error } = await supabase
+    .from('exam_attempts')
+    .insert({ exam_id: examId, user_id: user.id })
+    .select('id')
+    .single();
+  if (error) { console.error('start attempt error', error); return null; }
+  return (data as any).id as string;
+}
+
+export async function saveAnswer(attemptId: string, questionId: string, choiceId: string){
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { error } = await supabase
+    .from('attempt_answers')
+    .upsert({ attempt_id: attemptId, question_id: questionId, choice_id: choiceId });
+  if (error) { console.error('save answer error', error); }
+}
+
+export async function finishAttempt(attemptId: string){
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  // compute score client-side for now
+  const { data: answers } = await supabase
+    .from('attempt_answers')
+    .select('question_id, choice_id')
+    .eq('attempt_id', attemptId);
+  if (!answers) return null;
+  const questionIds = [...new Set(answers.map((a:any)=> a.question_id))];
+  const { data: correct } = await supabase
+    .from('exam_choices')
+    .select('id, question_id, correct')
+    .in('question_id', questionIds);
+  const correctSet = new Set((correct||[]).filter((c:any)=> c.correct).map((c:any)=> c.id));
+  let score = 0;
+  for (const a of answers) if (correctSet.has(a.choice_id)) score++;
+  await supabase.from('exam_attempts').update({ finished_at: new Date().toISOString(), score }).eq('id', attemptId);
+  return score;
 }
 
 export async function fetchLessonById(id: string) {
