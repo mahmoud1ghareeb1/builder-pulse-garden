@@ -45,7 +45,7 @@ export type Exam = {
 export async function fetchLessons(limit?: number) {
   const supabase = getSupabase();
   if (!supabase) return [] as Lesson[];
-  let query = supabase.from("lessons").select("id,title,thumbnail_url,watched,published_at").order("published_at", { ascending: false });
+  let query = supabase.from("lessons").select("id,title,thumbnail_url,video_url,watched,published_at").order("published_at", { ascending: false });
   if (limit) query = query.limit(limit);
   const { data, error } = await query;
   if (error) {
@@ -60,7 +60,7 @@ export async function fetchUnwatchedLessons(limit?: number) {
   if (!supabase) return [] as Lesson[];
   let query = supabase
     .from("lessons")
-    .select("id,title,thumbnail_url,watched,published_at")
+    .select("id,title,thumbnail_url,video_url,watched,published_at")
     .eq("watched", false)
     .order("published_at", { ascending: false });
   if (limit) query = query.limit(limit);
