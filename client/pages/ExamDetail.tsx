@@ -5,17 +5,17 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchExamById, fetchExamQuestions } from "@/lib/supabase";
 
-export default function ExamDetail(){
+export default function ExamDetail() {
   const { id } = useParams();
   const { data: exam, isLoading } = useQuery({
-    queryKey:["exam", id],
-    queryFn: ()=> fetchExamById(id as string),
-    enabled: Boolean(id)
+    queryKey: ["exam", id],
+    queryFn: () => fetchExamById(id as string),
+    enabled: Boolean(id),
   });
   const { data: questions = [] } = useQuery({
-    queryKey:["exam-questions", id],
-    queryFn: ()=> fetchExamQuestions(id as string),
-    enabled: Boolean(id)
+    queryKey: ["exam-questions", id],
+    queryFn: () => fetchExamQuestions(id as string),
+    enabled: Boolean(id),
   });
 
   return (
@@ -24,24 +24,38 @@ export default function ExamDetail(){
         <p className="text-muted-foreground">جارِ التحميل...</p>
       ) : !exam ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">لا يوجد امتحان بهذا المعرف.</CardContent>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            لا يوجد امتحان بهذا المعرف.
+          </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-extrabold">{exam.name}</h1>
-            <Button asChild variant="secondary"><Link to="/exams">عودة</Link></Button>
+            <Button asChild variant="secondary">
+              <Link to="/exams">عودة</Link>
+            </Button>
           </div>
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">تفاصيل الامتحان</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">تفاصيل الامتحان</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm text-muted-foreground">
                 <div>من {new Date(exam.open_at).toLocaleString()}</div>
                 <div>إلى {new Date(exam.close_at).toLocaleString()}</div>
-                {exam.duration_minutes ? (<div>المدة: {exam.duration_minutes} دقيقة</div>) : null}
+                {exam.duration_minutes ? (
+                  <div>المدة: {exam.duration_minutes} دقيقة</div>
+                ) : null}
               </div>
               <div className="text-sm">عدد الأسئلة: {questions.length}</div>
-              <Button asChild className="w-full" disabled={questions.length===0}><Link to={`/exams/${id}/start`}>بدء الامتحان</Link></Button>
+              <Button
+                asChild
+                className="w-full"
+                disabled={questions.length === 0}
+              >
+                <Link to={`/exams/${id}/start`}>بدء الامتحان</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
